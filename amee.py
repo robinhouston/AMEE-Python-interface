@@ -132,22 +132,10 @@ class AMEE(object):
     '''
     return Profile(self, self.request("/profiles", "POST", {"profile": "true"})["profile"]["uid"])
   
-  def profile_uids(self):
-    '''Return a list of the UIDs of all profiles
-    '''
-    return [profile["uid"] for profile in self.request("/profiles", "GET")["profiles"]]
-  
   def profiles(self):
     '''Return a list of all profiles.'''
     return [ Profile(self, uid) for uid in self.profile_uids() ]
   
-  def profile(self, uid):
-    '''Return a Profile object corresponding to the specified UID.
-    If the UID does not exist, an object will still be returned but
-    will give an error when you try to use it.
-    '''
-    return Profile(self, uid)
-
   def delete_profile(self, uid):
     '''Delete an AMEE profile, given the UID.
     '''
@@ -194,7 +182,7 @@ class AMEE(object):
       return uid
     
     if complete:
-      raise Error("Incomplete drilldown, '%s' must be specified" % (r["choices"]["name"],))
+      raise Error("Incomplete drilldown, '%s' must be specified" % (r_choices["name"],))
 
     return r_choices
 
