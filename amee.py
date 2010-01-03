@@ -153,6 +153,9 @@ class AMEE(object):
     are incomplete. In this case the return value will always be the UID.
     
     Results are cached using memcache.
+    
+    Typical applications will not call this method directly: it is used internally
+    by Profile.create_item(s).
     '''
     choices_string = urllib.urlencode(choices)
     memcache_key = ";".join((self.server, path, choices_string, str(complete)))
