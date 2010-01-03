@@ -205,7 +205,7 @@ class Profile(object):
     For example, you could record five long-haul return flights as follows:
     
     long_haul_flights = profile.create_item("/transport/plane/generic",
-      {"type": "short haul", "size": "return"},
+      { "type": "long haul", "size": "return" },
       { "journeys": 5 }
     )
     '''
