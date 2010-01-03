@@ -137,11 +137,6 @@ class AMEE(object):
     '''Return a list of all profiles.'''
     return [ Profile(self, profile["uid"]) for profile in self.request("/profiles", "GET")["profiles"] ]
   
-  def delete_profile(self, uid):
-    '''Delete an AMEE profile, given the UID.
-    '''
-    self.request("/profiles/" + uid, "DELETE")
-  
   def drill(self, path, choices, complete=False):
     '''Perform a data item drilldown.
     
@@ -156,7 +151,8 @@ class AMEE(object):
     Results are cached using memcache.
     
     Typical applications will not call this method directly: it is used internally
-    by Profile.create_item(s).
+    by Profile.create_item(s). You could call it directly if you wanted to allow
+    a user to specify data items interactively one choice at a time.
     '''
     choices_string = urllib.urlencode(choices)
     memcache_key = ";".join((self.server, path, choices_string, str(complete)))
@@ -200,10 +196,19 @@ class Profile(object):
     '''
     if self.uid is None:
       raise Error("Profile has already been deleted")
-    self.api.delete_profile(self.uid)
+    self.api.request("/profiles/" + self.uid, "DELETE")
     self.uid = None
 
   def create_item(self, path, choices, values):
+    '''Create a profile item, given the path and drilldown choices for the data item.
+    
+    For example, you could record five long-haul return flights as follows:
+    
+    long_haul_flights = profile.create_item("/transport/plane/generic",
+      {"type": "short haul", "size": "return"},
+      { "journeys": 5 }
+    )
+    '''
     if self.uid is None:
       raise Error("Profile has been deleted")
     if not path.startswith("/"):
@@ -228,6 +233,10 @@ class Profile(object):
     but more efficient, because it uses the AMEE batch update API. (One behaviour
     difference is that create_items is atomic, so that if one of the items fails then
     none of them will be created.)
+    
+    common_values are values that are passed for each item, unless overridden in
+    an individual item. (You could pass the startDate and endDate / duration here,
+    for example.)
     
     The return value is an array of ProfileItem objects, one for each item created.
     '''
@@ -259,7 +268,7 @@ class ProfileItem(object):
     return self.api.request(self.uri, "GET")
   
   def co2(self):
-    '''The amount of Carbon Dioxide represented by this profile item,
+    '''The amount of carbon dioxide represented by this profile item,
     in kilograms per year.
     '''
     amount = self.get()["profileItem"]["amount"]
