@@ -134,7 +134,7 @@ class AMEE(object):
   
   def profiles(self):
     '''Return a list of all profiles.'''
-    return [ Profile(self, uid) for uid in self.profile_uids() ]
+    return [ Profile(self, profile["uid"]) for profile in self.request("/profiles", "GET")["profiles"] ]
   
   def delete_profile(self, uid):
     '''Delete an AMEE profile, given the UID.
@@ -165,7 +165,7 @@ class AMEE(object):
     return result
   
   def _drill(self, path, choices_string, complete=False):
-    '''Perform the drilldown directly, without caching
+    '''Perform the drilldown directly, without caching.
     '''
     r_choices = self.request("/data" + path + "/drill?" + choices_string)["choices"]
     
