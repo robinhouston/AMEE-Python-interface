@@ -99,6 +99,7 @@ class AMEE(object):
     )
     
     if response.status_code not in (200, 201, 401):
+      logging.error("Error response from AMEE: %s", response.content)
       raise APIError("Status code %d from %s to %s" % (response.status_code, method, path))
 
     return response
