@@ -167,8 +167,10 @@ class AMEE(object):
   def _drill(self, path, choices_string, complete=False):
     '''Perform the drilldown directly, without caching.
     '''
+    if not path.startswith("/"):
+      raise Error("Path '%s' does not start with /" % (path,))
     r_choices = self.request("/data" + path + "/drill?" + choices_string)["choices"]
-    
+
     # The "choices" item is an array of dicts with keys "name" and "value", which
     # appear always to be identical. We simplify this structure by replacing each
     # such choice with its name.
@@ -182,7 +184,8 @@ class AMEE(object):
       return uid
     
     if complete:
-      raise Error("Incomplete drilldown, '%s' must be specified" % (r_choices["name"],))
+      raise Error("Incomplete drilldown, '%s' must be specified; possible values are %s" % (
+        r_choices["name"], r_choices["choices"]))
 
     return r_choices
 
