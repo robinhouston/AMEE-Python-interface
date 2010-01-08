@@ -1,17 +1,9 @@
-#  amee.py
+# amee.py
 #
-# A simple Python interface to the AMEE API, designed to work on Google App Engine.
-# Does not expose the entire API - just the bits that I personally need - though the
+# A simple Python interface to the AMEE API, designed to work on Google App Engine as
+# well as standard Python installs. Does not expose the entire API, though the
 # AMEE.request method can be used to make arbitrary API calls, and it should be easy
 # to extend if necessary.
-#
-# The dependencies on App Engine are:
-#
-#  - direct use of the urlfetch API (the urllib wrapper imposes unreasonably short timeouts),
-#  - use of memcache to cache data item UIDs.
-#
-# I am very much up for replacing these with more general mechanisms if anyone wants to
-# use this in a different environment.
 # 
 # Example usage:
 # 
@@ -20,6 +12,8 @@
 # profile = a.create_profile()
 # print "Created AMEE profile with UID %s" % (profile.uid,)
 # 
+# electricity_kwh_per_year = 1000
+#
 # electricity = profile.create_item(
 #   "/business/energy/electricity", {"country": "United Kingdom"},
 #   {"energyPerTime": electricity_kwh_per_year}
@@ -29,16 +23,44 @@
 # 
 # profile.delete()
 
-#  -- Robin Houston, January 2010
-
+# -- Robin Houston and Tom Dyson, January 2010
 
 import logging
 import re
 import urllib
 
-from google.appengine.api import (memcache, urlfetch)
-from django.utils import simplejson as json
+MEMCACHE_HOSTS = ['127.0.0.1:11211']
 
+class MemcacheWrapper(object):
+    '''wrapper for memcache, mimicing GAE's wrapper'''
+    def __init__(self):
+        import memcache
+        self.mc = memcache.Client(MEMCACHE_HOSTS, debug=0)
+    def get(self, key, namespace):
+        return self.mc.get('%s_%s' % (namespace, key))
+    def set(self, key, result, namespace):
+        return self.mc.set('%s_%s' % (namespace, key), result)
+
+def _fetch(uri, method, payload, follow_redirects, deadline, headers):
+    '''wrapper for urllib2, mimicing GAE's urlfetch'''
+    import urllib2
+    req = urllib2.Request(uri, payload, headers)
+    response = urllib2.urlopen(req)
+    response.status_code = response.code
+    response.content = response.read()
+    return response
+
+try:
+    from google.appengine.api import (memcache, urlfetch)
+    fetch = urlfetch.fetch
+except ImportError:
+    fetch = _fetch
+    memcache = MemcacheWrapper()
+
+try:    
+    from django.utils import simplejson as json
+except ImportError:
+    import json
 
 DEFAULT_SERVER = 'https://stage.co2.dgen.net' # Use an encrypted transport by default
 MEMCACHE_NAMESPACE = 'AMEE'
@@ -90,7 +112,7 @@ class AMEE(object):
     }
     headers.update(request_headers)
 
-    response = urlfetch.fetch(uri,
+    response = fetch(uri,
       method=method,
       payload=payload,
       follow_redirects=False,
