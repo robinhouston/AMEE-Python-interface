@@ -188,6 +188,16 @@ class AMEE(object):
         r_choices["name"], r_choices["choices"]))
 
     return r_choices
+  
+  def fly(self, path, choices, values):
+    '''Perform an on-the-fly calculation. The parameters are interpreted as in Profile.create_item,
+    but this method does not require a profile or create any profile items. The return value is
+    the total carboon footprint of the item, measured in kg / year of carbon dioxide.
+    '''
+    uid = self.drill(path, choices)
+    values_encoded = urllib.urlencode(values)
+
+    return self.request("/data" + path + "/" + uid + "?" + values_encoded,)["amount"]["value"]
 
 class Profile(object):
   def __init__(self, api, uid):
